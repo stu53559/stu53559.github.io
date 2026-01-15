@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WHO TB Data Visualizations - Interactive Gallery</title>
+    <style>
+        * {margin:0;padding:0;box-sizing:border-box;}
+        body {font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f5f5f5;height:100vh;overflow:hidden;}
+        .container {display:flex;height:100vh;}
+        .sidebar {width:300px;background-color:#2c3e50;color:white;padding:20px;overflow-y:auto;box-shadow:2px 0 5px rgba(0,0,0,0.1);}
+        .sidebar h1 {font-size:20px;margin-bottom:10px;color:#ecf0f1;border-bottom:2px solid #3498db;padding-bottom:10px;}
+        .sidebar h2 {font-size:14px;margin-top:20px;margin-bottom:10px;color:#bdc3c7;text-transform:uppercase;letter-spacing:1px;}
+        .visualization-list {list-style:none;}
+        .visualization-item {margin-bottom:8px;}
+        .visualization-link {display:block;padding:12px 15px;color:#ecf0f1;text-decoration:none;border-radius:5px;transition:all 0.3s ease;cursor:pointer;border-left:3px solid transparent;}
+        .visualization-link:hover {background-color:#34495e;border-left-color:#3498db;transform:translateX(5px);}
+        .visualization-link.active {background-color:#3498db;border-left-color:#2980b9;font-weight:bold;}
+        .visualization-link .title {font-size:14px;font-weight:500;margin-bottom:3px;}
+        .visualization-link .description {font-size:11px;color:#bdc3c7;opacity:0.8;}
+        .main-content {flex:1;display:flex;flex-direction:column;background-color:white;}
+        .header {background-color:#34495e;color:white;padding:15px 25px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+        .header h2 {font-size:18px;font-weight:400;}
+        .iframe-container {flex:1;position:relative;overflow:hidden;}
+        .iframe-container iframe {width:100%;height:100%;border:none;display:block;}
+        .iframe-container iframe.hidden {display:none;}
+        .loading {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#7f8c8d;font-size:16px;}
+        .spinner {border:3px solid #f3f3f3;border-top:3px solid #3498db;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 10px;}
+        @keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+        @media (max-width:768px) {
+            .container {flex-direction:column;}
+            .sidebar {width:100%;height:200px;}
+            .main-content {height:calc(100vh - 200px);}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>WHO TB Visualizations</h1>
+            <h2>Interactive Charts</h2>
+            <ul class="visualization-list">
+                <li class="visualization-item">
+                    <a href="#" class="visualization-link active" data-file="01_global_trends_interactive.html">
+                        <div class="title">1. Cross-Country TB Rate Comparison</div>
+                        <div class="description">Time series with dispersion bands (±1 SD)</div>
+                    </a>
+                </li>
+                <li class="visualization-item">
+                    <a href="#" class="visualization-link" data-file="02_top_bottom_countries_interactive.html">
+                        <div class="title">2. Top/Bottom Countries</div>
+                        <div class="description">Highest and lowest TB rates</div>
+                    </a>
+                </li>
+                <li class="visualization-item">
+                    <a href="#" class="visualization-link" data-file="03_key_countries_trends_interactive.html">
+                        <div class="title">3. Key Countries Trends</div>
+                        <div class="description">Peak, largest, smallest comparison</div>
+                    </a>
+                </li>
+                <li class="visualization-item">
+                    <a href="#" class="visualization-link" data-file="04_distribution_by_year_interactive.html">
+                        <div class="title">4. Distribution by Year</div>
+                        <div class="description">Box plots across time period</div>
+                    </a>
+                </li>
+                <li class="visualization-item">
+                    <a href="#" class="visualization-link" data-file="05_choropleth_map_interactive.html">
+                        <div class="title">5. Choropleth Map</div>
+                        <div class="description">Animated global TB rates map</div>
+                    </a>
+                </li>
+                <li class="visualization-item">
+                    <a href="#" class="visualization-link" data-file="06_heatmap_top20_interactive.html">
+                        <div class="title">6. Top 20 Heatmap</div>
+                        <div class="description">Temporal patterns visualization</div>
+                    </a>
+                </li> 
+            </ul>
+
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <h2 id="current-title">Cross-Country TB Rate Comparison (1991-2007)</h2>
+            </div>
+            <div class="iframe-container">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div>Loading visualization...</div>
+                </div>
+                <iframe id="visualization-frame" src="01_global_trends_interactive.html" onload="hideLoading()"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get all visualization links
+        const links = document.querySelectorAll('.visualization-link');
+        const iframe = document.getElementById('visualization-frame');
+        const loading = document.getElementById('loading');
+        const currentTitle = document.getElementById('current-title');
+
+        // Titles mapping
+        const titles = {
+            '01_global_trends_interactive.html': 'Cross-Country TB Rate Comparison (1991-2007)',
+            '02_top_bottom_countries_interactive.html': 'Top 10 and Bottom 10 Countries',
+            '03_key_countries_trends_interactive.html': 'TB Trends: Key Countries Comparison',
+            '04_distribution_by_year_interactive.html': 'Distribution of TB Rates Across Countries by Year',
+            '05_choropleth_map_interactive.html': 'Global TB Rates Over Time - Interactive Map',
+            '06_heatmap_top20_interactive.html': 'TB Rates Heatmap: Top 20 Countries (1991-2007)'
+        };
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        // Add click event listeners
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all links
+                links.forEach(l => l.classList.remove('active'));
+                
+                // Add active class to clicked link
+                this.classList.add('active');
+                
+                // Get the file name
+                const fileName = this.getAttribute('data-file');
+                
+                // Update title
+                currentTitle.textContent = titles[fileName] || 'Visualization';
+                
+                // Show loading
+                showLoading();
+                
+                // Load the HTML file in the iframe
+                iframe.classList.remove('hidden');
+                iframe.src = fileName;
+            });
+        });
+
+        // Handle iframe load errors
+        iframe.addEventListener('error', function() {
+            loading.innerHTML = '<div style="color: #e74c3c;">Error loading visualization</div>';
+        });
+    </script>
+</body>
+</html>
